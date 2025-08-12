@@ -41,7 +41,7 @@ var (
 		return "./db"
 	}()
 	dbFile      = flag.String("f", defaultDBPath, "db file")
-	locStr      = flag.String("l", "Asia/Shanghai", "show time location")
+	locStr      = flag.String("l", "auto", "show time location. eg: auto,local,utc,Asia/Shanghai")
 	showMode    = flag.String("s", "", "show mode: y,m,d")
 	includePort = flag.String("i", "", "include ports")
 	excludePort = flag.String("e", "", "exclude ports")
@@ -53,7 +53,7 @@ func main() {
 	if err := os.MkdirAll(filepath.Dir(*dbFile), 0o755); err != nil {
 		panic(err)
 	}
-	db, err := gorm.Open(sqlite.Open(*dbFile))
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?_loc=%s", *dbFile, *locStr)))
 	if err != nil {
 		panic(err)
 	}
@@ -128,28 +128,25 @@ func main() {
 }
 
 func show(db *gorm.DB) {
-	var tmp []DB
+	var tmp []struct {
+		DB
+		Strtime string `gorm:"column:strtime"`
+	}
 
 	var timestr string
-	var timeFormat string
 	switch *showMode {
 	case "y":
 		timestr = "%Y"
-		timeFormat = "2006"
 	case "m":
 		timestr = "%Y-%m"
-		timeFormat = "2006-01"
 	case "d":
 		timestr = "%Y-%m-%d"
-		timeFormat = "2006-01-02"
 	default:
 		timestr = "%Y-%m-%d"
-		timeFormat = "2006-01-02"
 	}
 
-	sql := db.Select(`
+	sql := db.Model(&DB{}).Select(`
         strftime(?,time) as strtime,
-        min(time) as time,
         name,
         sum(recv) as recv,
         sum(sent) as sent
@@ -168,17 +165,11 @@ func show(db *gorm.DB) {
 	fmt.Printf("%-12s%-20s%12s%12s\n", "----", "----", "----", "----")
 	var t string
 
-	loc, err := time.LoadLocation(*locStr)
-	if err != nil {
-		panic(err)
-	}
-
 	for _, v := range tmp {
-		timeStr := v.Time.In(loc).Format(timeFormat)
-		if t != "" && t != timeStr {
+		if t != "" && t != v.Strtime {
 			fmt.Println("---")
 		}
-		t = timeStr
+		t = v.Strtime
 
 		recv := v.Recv.GB()
 		sent := v.Sent.GB()
@@ -195,6 +186,6 @@ func show(db *gorm.DB) {
 			}
 		}
 
-		fmt.Printf("%-12s%-20s%12s%12s\n", timeStr, v.Name, recv.String(), sent.String())
+		fmt.Printf("%-12s%-20s%12s%12s\n", v.Strtime, v.Name, recv.String(), sent.String())
 	}
 }
