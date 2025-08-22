@@ -18,7 +18,7 @@ import (
 
 type DB struct {
 	Time time.Time     `gorm:"column:time;type:timestamp;not null;autoCreateTime"`
-	Name string        `gorm:"column:name"`
+	Name string        `gorm:"column:name;index"`
 	Recv size.ByteSize `gorm:"column:recv;type:bigint"`
 	Sent size.ByteSize `gorm:"column:sent;type:bigint"`
 }
