@@ -40,11 +40,13 @@ var (
 		}
 		return "./db"
 	}()
-	dbFile      = flag.String("f", defaultDBPath, "db file")
-	locStr      = flag.String("l", "auto", "show time location. eg: auto,local,utc,Asia/Shanghai")
-	showMode    = flag.String("s", "", "show mode: y,m,d")
-	includePort = flag.String("i", "", "include ports")
-	excludePort = flag.String("e", "", "exclude ports")
+	dbFile            = flag.String("f", defaultDBPath, "db file")
+	locStr            = flag.String("l", "auto", "show time location. eg: auto,local,utc,Asia/Shanghai")
+	showMode          = flag.String("s", "", "show mode: y,m,d")
+	includePort       = flag.String("i", "", "include intercase")
+	excludePort       = flag.String("e", "", "exclude ports")
+	excludeDockerPort = flag.Bool("exclude-docker", false, "exclude docker ports")
+	pruneDBDockerPort = flag.Bool("prune-docker", false, "prune db docker ports")
 )
 
 func main() {
@@ -59,6 +61,11 @@ func main() {
 	}
 	if err := db.AutoMigrate(&DB{}, &KeyValue{}); err != nil {
 		panic(err)
+	}
+	if *pruneDBDockerPort {
+		if err := IncludeDocker(db).Delete(&DB{}).Error; err != nil {
+			panic(err)
+		}
 	}
 
 	if *showMode != "" {
@@ -157,6 +164,9 @@ func show(db *gorm.DB) {
 	if *excludePort != "" {
 		sql = sql.Where("name not in (?)", strings.Split(*excludePort, ","))
 	}
+	if *excludeDockerPort {
+		sql = ExcludeDocker(sql)
+	}
 	if err := sql.Find(&tmp).Error; err != nil {
 		fmt.Println(err)
 		return
@@ -188,4 +198,14 @@ func show(db *gorm.DB) {
 
 		fmt.Printf("%-12s%-20s%12s%12s\n", v.Strtime, v.Name, recv.String(), sent.String())
 	}
+}
+
+func ExcludeDocker(db *gorm.DB) *gorm.DB {
+	return db.Where("name NOT LIKE ? AND name NOT LIKE ? AND name NOT LIKE ?",
+		"docker%", "br-%", "veth%")
+}
+
+func IncludeDocker(db *gorm.DB) *gorm.DB {
+	return db.Where("name LIKE ? OR name LIKE ? OR name LIKE ?",
+		"docker%", "br-%", "veth%")
 }
