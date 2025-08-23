@@ -3,7 +3,7 @@ module github.com/Rehtt/server-ll
 go 1.24.5
 
 require (
-	github.com/Rehtt/Kit v0.1.9
+	github.com/Rehtt/Kit v0.1.10-0.20250823031005-336e69c8f01a
 	github.com/glebarez/sqlite v1.11.0
 	github.com/shirou/gopsutil/v3 v3.24.5
 	gorm.io/gorm v1.30.1

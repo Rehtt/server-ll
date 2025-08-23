@@ -1,5 +1,13 @@
 github.com/Rehtt/Kit v0.1.9 h1:p1cVOzQmddurdVZiCVM4D67y3r3fJoCZaweuaezwbvM=
 github.com/Rehtt/Kit v0.1.9/go.mod h1:hY+IHQLhJ8yjVqaVR+R8CjwwsrR/+ZsHhc/Cq1OSAuw=
+github.com/Rehtt/Kit v0.1.10-0.20250822160648-2e6329695cb2 h1:9keiI1jHCxsbND4SUyXjbRG+Oggbbbf/LmW2KNWN5LA=
+github.com/Rehtt/Kit v0.1.10-0.20250822160648-2e6329695cb2/go.mod h1:hY+IHQLhJ8yjVqaVR+R8CjwwsrR/+ZsHhc/Cq1OSAuw=
+github.com/Rehtt/Kit v0.1.10-0.20250823011607-c1bb56496b66 h1:Z81pdg2ZcOFvdPDjENIQ2+DGCN0sLGrtrfQu5OOpeic=
+github.com/Rehtt/Kit v0.1.10-0.20250823011607-c1bb56496b66/go.mod h1:hY+IHQLhJ8yjVqaVR+R8CjwwsrR/+ZsHhc/Cq1OSAuw=
+github.com/Rehtt/Kit v0.1.10-0.20250823031005-336e69c8f01a h1:7GkufYHj9FLNoPC9Q13010uWnpFj79D7BBdr47huAx8=
+github.com/Rehtt/Kit v0.1.10-0.20250823031005-336e69c8f01a/go.mod h1:hY+IHQLhJ8yjVqaVR+R8CjwwsrR/+ZsHhc/Cq1OSAuw=
+github.com/Rehtt/Kit/cli v0.0.0-20250704030502-4f8f96d1a109 h1:BROY2S8TAlbBC7VyLKbid9ae7Rs0zJU+EycZ/Gd8Qr8=
+github.com/Rehtt/Kit/cli v0.0.0-20250704030502-4f8f96d1a109/go.mod h1:9F/Dmb2OzSlG0XCZ4uIeeqz31zVaeZvhYta2Ha08w/I=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
