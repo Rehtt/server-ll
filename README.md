@@ -10,11 +10,12 @@
 - **无侵入采集**：基于 `gopsutil` 读取各网卡累计字节数，无需管理员权限。
 - **定时记录**：配合 crontab/任务计划，按执行频率记录增量流量。
 - **聚合展示**：支持按年(`y`)/月(`m`)/日(`d`)汇总。
-- **网卡筛选**：支持包含或排除指定网卡名（interface name）。
+- **网卡筛选**：支持包含或排除指定网卡名，内置 Docker 网卡过滤。
 - **轻量持久化**：单文件 SQLite，自动迁移，无外部依赖。
+- **数据清理**：提供 Docker 网卡数据清理功能。
 
 ### 环境
-- Go（见 `go.mod`）
+- Go 1.24+（见 `go.mod`）
 - Linux / macOS（已在 Darwin 上验证）
 
 ### 安装
@@ -31,7 +32,7 @@ go build -o server-ll ./
 ```
 
 ### 快速开始
-第一次运行用于初始化“基线”（不会产生统计记录），第二次及之后运行会记录增量：
+第一次运行用于初始化"基线"（不会产生统计记录），第二次及之后运行会记录增量：
 ```bash
 server-ll -f /path/to/db
 # 再运行一次（或等待下一次定时任务），将把与上次之间的增量写入数据库
@@ -39,35 +40,76 @@ server-ll -f /path/to/db
 
 ### 命令行参数
 
+#### 全局参数
 | 参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-f` | SQLite 数据库文件路径 | `$HOME/.local/var/server-ll/db` |
-| `-l` | 展示时使用的时区（IANA 名称） | `Asia/Shanghai` |
-| `-s` | 展示模式：`y`/`m`/`d`（年/月/日）。为空时不展示，仅记录 | 空 |
+| `-l` | 时区设置：`auto`/`local`/`utc`/`Asia/Shanghai` 等 | `auto` |
+
+#### 子命令
+
+**记录流量（默认命令）**
+```bash
+server-ll [全局参数]
+```
+
+**查看历史流量**
+```bash
+server-ll show [参数]
+```
+
+| 参数 | 说明 | 默认值 |
+| --- | --- | --- |
+| `-s` | 展示模式：`y`/`m`/`d`（年/月/日） | `d` |
 | `-i` | 仅包含的网卡名，逗号分隔（如 `en0,eth0`） | 空 |
 | `-e` | 排除的网卡名，逗号分隔（如 `lo,lo0`） | 空 |
+| `-exclude-docker` | 排除 Docker 相关网卡（`docker*`、`br-*`、`veth*`） | false |
 
-注意：`-i`/`-e` 的对象是“网卡名”（interface name），不是端口号。
+**清理 Docker 网卡数据**
+```bash
+server-ll prune
+```
+
+注意：`-i`/`-e` 的对象是"网卡名"（interface name），不是端口号。
 
 ### 使用示例
+
+#### 基本使用
 - 仅记录（配合 crontab 定时执行）：
 ```bash
 server-ll -f /usr/local/var/server-ll/db
 ```
 
-- 按日聚合展示（北京时间）：
+- 按日聚合展示（默认模式）：
 ```bash
-server-ll -f /usr/local/var/server-ll/db -l Asia/Shanghai -s d
+server-ll show -f /usr/local/var/server-ll/db
 ```
 
-- 按月聚合，仅统计 `en0` 与 `utun2`：
+- 按月聚合展示：
 ```bash
-server-ll -f /usr/local/var/server-ll/db -s m -i en0,utun2
+server-ll show -f /usr/local/var/server-ll/db -s m
 ```
 
-- 按年聚合，排除回环网卡：
+#### 网卡筛选
+- 仅统计 `en0` 与 `utun2`：
 ```bash
-server-ll -f /usr/local/var/server-ll/db -s y -e lo,lo0
+server-ll show -f /usr/local/var/server-ll/db -i en0,utun2
+```
+
+- 排除回环网卡：
+```bash
+server-ll show -f /usr/local/var/server-ll/db -e lo,lo0
+```
+
+- 排除 Docker 相关网卡：
+```bash
+server-ll show -f /usr/local/var/server-ll/db -exclude-docker
+```
+
+#### 数据清理
+- 清理所有 Docker 网卡数据：
+```bash
+server-ll prune -f /usr/local/var/server-ll/db
 ```
 
 示例输出：
@@ -102,25 +144,29 @@ macOS 也可考虑使用 `launchd` 管理守护，但 crontab 同样可用。
 ### 数据存储与原理
 - 数据库为 SQLite 单文件，由 `-f` 指定路径决定；程序会在路径不存在时自动创建目录与文件。
 - 自动迁移的表：
-  - `DB(time,timestamp; name,text; recv,bigint; sent,bigint)`：每次记录的“增量”数据（相对上次基线的变化量）。
-  - `KeyValue(key,text; value,text)`：存储上次各网卡的累计值“基线”（`key = "historical_record"`，`value` 为 JSON）。
+  - `DB(time,timestamp; name,text,index; recv,bigint; sent,bigint)`：每次记录的"增量"数据（相对上次基线的变化量）。
+  - `KeyValue(key,text,unique; value,text)`：存储上次各网卡的累计值"基线"（`key = "historical_record"`，`value` 为 JSON）。
 - 采集原理：每次运行读取 `gopsutil/net.IOCounters(true)` 的累计字节数，与上次基线对比得到增量；若检测到累计值回绕/变小（如系统重启或计数溢出），则将当次视为新基线并直接记录当前读数。
 - 展示原理：使用 SQLite `strftime` 对记录时间分组聚合，再按所选时区格式化输出时间字符串。
+- Docker 网卡识别：自动识别 `docker*`、`br-*`、`veth*` 模式的网卡名。
 
 ### 常见问题（FAQ）
 - 为什么第一次没看到统计数据？
-  - 第一次仅写入“基线”，不产生增量；第二次运行后才会看到统计数据。
+  - 第一次仅写入"基线"，不产生增量；第二次运行后才会看到统计数据。
 - 如何获取可用的网卡名？
   - Linux：`ip link`、`ifconfig`；macOS：`ifconfig`（如 `en0`、`lo0`、`utunX`）。
-- 展示的时区如何生效？
-  - 聚合分组使用数据库中的时间，打印时会将时间转换到 `-l` 指定的时区后再输出格式化字符串。
+- 时区设置有哪些选项？
+  - `auto`：自动检测系统时区（默认）；`local`：本地时区；`utc`：UTC 时区；或指定 IANA 时区名称如 `Asia/Shanghai`。
 - 数据会不会丢？
   - 每次运行均落库（事务写入），若进程中断，已提交的数据不受影响。
+- 如何清理 Docker 网卡数据？
+  - 使用 `server-ll prune` 命令，会列出所有 Docker 网卡并确认后删除。
 
 ### 注意与限制
 - 确保 `-f` 指向的目录可写；建议放置在本地持久盘路径。
 - 若系统累计计数器溢出或重置（如重启、驱动重载、容器重建），程序会自动将当次视为新基线，避免出现负值；该次记录会以当前读数入库。
 - 本项目面向 Linux/macOS；Windows 未覆盖默认路径规范。
+- Docker 网卡数据清理操作不可逆，请谨慎使用。
 
 ### 贡献
 欢迎提交 Issue / PR 改进功能与文档。提交 PR 前请确保通过构建与基本自测。
