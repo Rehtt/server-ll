@@ -45,6 +45,11 @@ server-ll -f /path/to/db
 | --- | --- | --- |
 | `-f` | SQLite 数据库文件路径 | `$HOME/.local/var/server-ll/db` |
 | `-l` | 时区设置：`auto`/`local`/`utc`/`Asia/Shanghai` 等 | `auto` |
+| `-i` | 仅包含的网卡名，逗号分隔（如 `en0,eth0`） | 空 |
+| `-e` | 排除的网卡名，逗号分隔（如 `lo,lo0`） | 空 |
+| `-exclude-docker` | 排除 Docker 相关网卡（`docker*`、`br-*`、`veth*`） | false |
+
+注意：`-i`/`-e` 的对象是"网卡名"（interface name），不是端口号。
 
 #### 子命令
 
@@ -61,17 +66,11 @@ server-ll show [参数]
 | 参数 | 说明 | 默认值 |
 | --- | --- | --- |
 | `-s` | 展示模式：`y`/`m`/`d`（年/月/日） | `d` |
-| `-i` | 仅包含的网卡名，逗号分隔（如 `en0,eth0`） | 空 |
-| `-e` | 排除的网卡名，逗号分隔（如 `lo,lo0`） | 空 |
-| `-exclude-docker` | 排除 Docker 相关网卡（`docker*`、`br-*`、`veth*`） | false |
 
 **清理 Docker 网卡数据**
 ```bash
 server-ll prune
 ```
-
-注意：`-i`/`-e` 的对象是"网卡名"（interface name），不是端口号。
-
 ### 使用示例
 
 #### 基本使用
@@ -82,34 +81,34 @@ server-ll -f /usr/local/var/server-ll/db
 
 - 按日聚合展示（默认模式）：
 ```bash
-server-ll show -f /usr/local/var/server-ll/db
+server-ll -f /usr/local/var/server-ll/db show
 ```
 
 - 按月聚合展示：
 ```bash
-server-ll show -f /usr/local/var/server-ll/db -s m
+server-ll -f /usr/local/var/server-ll/db show-s m
 ```
 
 #### 网卡筛选
 - 仅统计 `en0` 与 `utun2`：
 ```bash
-server-ll show -f /usr/local/var/server-ll/db -i en0,utun2
+server-ll -f /usr/local/var/server-ll/db -i en0,utun2 show
 ```
 
 - 排除回环网卡：
 ```bash
-server-ll show -f /usr/local/var/server-ll/db -e lo,lo0
+server-ll -f /usr/local/var/server-ll/db -e lo,lo0 show
 ```
 
 - 排除 Docker 相关网卡：
 ```bash
-server-ll show -f /usr/local/var/server-ll/db -exclude-docker
+server-ll -f /usr/local/var/server-ll/db -exclude-docker show
 ```
 
 #### 数据清理
 - 清理所有 Docker 网卡数据：
 ```bash
-server-ll prune -f /usr/local/var/server-ll/db
+server-ll -f /usr/local/var/server-ll/db prune
 ```
 
 示例输出：

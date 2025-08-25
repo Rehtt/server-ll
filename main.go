@@ -51,10 +51,11 @@ var (
 )
 
 var (
-	showMode          = showCommand.String("s", "d", "show mode: y,m,d")
-	includePort       = showCommand.String("i", "", "include intercase")
-	excludePort       = showCommand.String("e", "", "exclude ports")
-	excludeDockerPort = showCommand.Bool("exclude-docker", false, "exclude docker ports")
+	showMode = showCommand.String("s", "d", "show mode: y,m,d")
+
+	includePort       = cli.String("i", "", "include intercase")
+	excludePort       = cli.String("e", "", "exclude ports")
+	excludeDockerPort = cli.Bool("exclude-docker", false, "exclude docker ports")
 )
 
 func main() {

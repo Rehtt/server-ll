@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/Rehtt/Kit/util/size"
@@ -28,8 +30,15 @@ func Record(db *gorm.DB) {
 		panic(err)
 	}
 
+	includePort := strings.Split(*includePort, ",")
+	excludePort := strings.Split(*excludePort, ",")
+
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		for _, v := range prev {
+			if (len(includePort) > 0 && (!slices.Contains(includePort, v.Name) || slices.Contains(excludePort, v.Name))) ||
+				(*excludeDockerPort && strings.HasPrefix(v.Name, "docker") || strings.HasPrefix(v.Name, "br-") || strings.HasPrefix(v.Name, "veth")) {
+				continue
+			}
 			h, ok := historicalRecord[v.Name]
 			if ok {
 				data := DB{Name: v.Name}
